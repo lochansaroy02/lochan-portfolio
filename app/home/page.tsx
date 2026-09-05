@@ -8,9 +8,9 @@ import Node from "@/assets/icons/Node";
 import Postgres from "@/assets/icons/Postgres";
 import ReactIcon from "@/assets/icons/React";
 import Tailwind from "@/assets/icons/Tailwind";
-import SplitText from "@/components/animata/text/text-split";
 import Leetcode from "@/components/Leetcode";
 import Button from "@/components/ui/Button";
+import { HyperText } from "@/components/ui/hyper-text";
 import profile from "@/public/images/profile2.jpg";
 import { MontserratFont } from "@/utils/fonts";
 import { motion } from "motion/react";
@@ -99,7 +99,10 @@ const Page = () => {
             <div className=" flex  items-center lg:items-start flex-col">
                 <div className="">
 
-                    <SplitText text="lochan" className="uppercase" />
+                    <HyperText
+                        text="Lochan Saroy"
+                        className="text-6xl font-black md:text-7xl lg:text-9xl"
+                    />
                 </div>
                 <h2 ref={paraRef} className={`text-xl md:text-3xl lg:text-4xl opacity-75 mt-2 ${MontserratFont.className}`}>
                     Full Stack Developer
