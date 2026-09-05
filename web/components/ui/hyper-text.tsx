@@ -73,7 +73,9 @@ export function HyperText({
       className="flex scale-100 cursor-default overflow-hidden py-2"
       onMouseEnter={triggerAnimation}
     >
-      <AnimatePresence mode="wait">
+      {/* No mode="wait" here: that mode animates one child at a time, but we
+          render one span per character, so it warned on every render. */}
+      <AnimatePresence>
         {displayText.map((letter, i) => (
           <motion.span
             key={i}
