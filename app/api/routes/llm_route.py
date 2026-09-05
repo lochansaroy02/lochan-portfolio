@@ -1,9 +1,11 @@
-from fastapi import APIRouter
+from typing import Literal
+
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.configs.memory import add_to_memory
-from app.controller.llm_call import get_response_by_prompt
+from app.controller.llm_call import get_response_by_prompt, stream_chat
 from app.prompts.llm import system_prompt
 from app.prompts.resume import resume_system_prommpt
 from app.utils.parse_json import parse_to_json
@@ -17,6 +19,15 @@ class chatRequest(BaseModel):
     user_id: str
 
 
+class Message(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=2000)
+
+
+class ChatStreamRequest(BaseModel):
+    messages: list[Message] = Field(min_length=1, max_length=40)
+
+
 @router.post("/chat")
 def get_users(req: chatRequest):
 
@@ -28,9 +39,28 @@ def get_users(req: chatRequest):
     )
     add_to_memory(user_id=req.user_id, content=data)
     return data
-    # return StreamingResponse(
-    #     stream_response(system_prompt, req.user_prompt), media_type="text/plain"
-    # )
+
+
+@router.post("/chat/stream")
+def chat_stream(req: ChatStreamRequest):
+    """Public portfolio chatbot. Streams the answer back as plain text."""
+
+    if req.messages[-1].role != "user":
+        raise HTTPException(
+            status_code=400, detail="The last message must be from the user"
+        )
+
+    history = [message.model_dump() for message in req.messages]
+
+    return StreamingResponse(
+        stream_chat(system_prompt, history),
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Cache-Control": "no-store",
+            # Stops nginx from buffering the stream into one lump.
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.get("/resume")
