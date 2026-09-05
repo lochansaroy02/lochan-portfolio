@@ -58,6 +58,9 @@ const ChatBot = () => {
     const [input, setInput] = useState("");
     const [isStreaming, setIsStreaming] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // null until mounted: the platform is unknowable during SSR, and rendering
+    // a guess would cause a hydration mismatch on the shortcut hint.
+    const [isMac, setIsMac] = useState<boolean | null>(null);
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +71,35 @@ const ChatBot = () => {
         const node = scrollRef.current;
         if (node) node.scrollTop = node.scrollHeight;
     }, [messages, isStreaming]);
+
+    useEffect(() => {
+        const platform =
+            (navigator as Navigator & { userAgentData?: { platform?: string } })
+                .userAgentData?.platform ||
+            navigator.platform ||
+            navigator.userAgent;
+
+        setIsMac(/mac|iphone|ipad|ipod/i.test(platform));
+    }, []);
+
+    // Cmd+K (mac) / Ctrl+K (windows, linux) toggles the panel.
+    // Browsers bind this to the address bar, but unlike Ctrl+T or Ctrl+W it is
+    // cancellable, which is why command palettes everywhere claim it.
+    useEffect(() => {
+        const onKeyDown = (event: KeyboardEvent) => {
+            const shortcutHeld = isMac
+                ? event.metaKey && !event.ctrlKey
+                : event.ctrlKey && !event.metaKey;
+
+            if (shortcutHeld && !event.altKey && event.key.toLowerCase() === "k") {
+                event.preventDefault();
+                setIsOpen((open) => !open);
+            }
+        };
+
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [isMac]);
 
     // Escape closes the panel.
     useEffect(() => {
@@ -190,6 +222,14 @@ const ChatBot = () => {
                     <span className="hidden whitespace-nowrap text-sm font-medium md:inline">
                         Ask me anything
                     </span>
+                )}
+
+                {/* Rendered only once the platform is known, so SSR and the
+                    client agree on the markup. */}
+                {!isOpen && isMac !== null && (
+                    <kbd className="hidden rounded border border-white/25 bg-white/10 px-1.5 py-0.5 font-sans text-[11px] font-semibold tracking-wide md:inline">
+                        {isMac ? "⌘K" : "Ctrl K"}
+                    </kbd>
                 )}
 
                 {!isOpen && (
